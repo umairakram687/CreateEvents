@@ -3,6 +3,9 @@ module.exports = (sequelize, DataTypes) => {
     image: {
       type: DataTypes.STRING,
     },
+    User_ID: {
+      type: DataTypes.INTEGER,
+    },
   });
   return UploafFile;
 };

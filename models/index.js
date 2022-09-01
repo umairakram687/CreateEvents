@@ -47,6 +47,11 @@ db.eventtypesCategories.belongsTo(db.user);
 
 db.uploadfile = require("./uploadFileModel")(sequelize, DataTypes);
 
+db.user.hasMany(db.uploadfile, {
+  foreignKey: "User_ID",
+});
+db.uploadfile.belongsTo(db.user);
+
 db.sequelize.sync({ force: false }).then(() => {
   console.log("Sequelize Re-Sync Done!!!!!");
 });

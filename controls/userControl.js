@@ -1,7 +1,9 @@
 const db = require("../models");
+const cloudinary = require("../cloudinary");
 const User = db.user;
 const eventType = db.eventtypes;
 const eventtypesCategories = db.eventtypesCategories;
+const fileUpload = db.uploadfile;
 
 // createUser
 
@@ -27,6 +29,7 @@ const createUser = async (req, res) => {
     salestarttime,
     saleenddate,
     saleendtime,
+    image,
   } = req.body;
 
   if (
@@ -83,6 +86,16 @@ const createUser = async (req, res) => {
           User_ID: userdata.id,
         });
         console.log("usercategory------->", userdata.id);
+        try {
+          const result = await cloudinary.uploader.upload(req.file.path);
+          // console.log("result----->", result);
+          await fileUpload.create({
+            image: result.secure_url,
+            User_ID: userdata.id,
+          });
+        } catch (error) {
+          res.send({ Massege: "Error Image", error: error });
+        }
       } else {
         res.status(200).send({
           Status: "Failed",
@@ -130,6 +143,10 @@ const findOneUserEvent = async (req, res) => {
         model: eventtypesCategories,
         attributes: ["categorytypeofevent"],
       },
+      {
+        model: fileUpload,
+        attributes: ["image"],
+      },
     ],
     where: { id: id },
   });
@@ -140,33 +157,98 @@ const findOneUserEvent = async (req, res) => {
   });
 };
 
-// const upload = require("multer");
-// const cloudinary = require("../cloudinary");
-// const fs = require("fs");
+//findAllUser
 
-// server.use("/upload-image", upload.array("image"), async (req, res) => {
-//   const uploader = async (path) => await cloudinary.uploads(path, "Images");
-//   if (req.method === "POST") {
-//     const urls = [];
-//     const files = req.files;
+const findAllUser = async (req, res) => {
+  const users = await User.findAll({
+    attributes: [
+      "id",
+      "title",
+      "description",
+      "locationofEvent",
+      "tags",
+      "address",
+      "startdate",
+      "starttime",
+      "enddate",
+      "endtime",
+      "timezone",
+      "typeofticket",
+      "price",
+      "noofadmission",
+      "quantity",
+      "salestartdate",
+      "salestarttime",
+      "saleenddate",
+      "saleendtime",
+    ],
+    include: [
+      {
+        model: eventType,
+        attributes: ["Typeofevent"],
+      },
+      {
+        model: eventtypesCategories,
+        attributes: ["categorytypeofevent"],
+      },
+      {
+        model: fileUpload,
+        attributes: ["image"],
+      },
+    ],
+  });
+  res.send({ Massege: "all users", users: users });
+};
 
-//     for (const file of files) {
-//       const { path } = file;
-//       const newPath = await uploader(path);
-//       urls.push(newPath);
-//       fs.unlinkSync(path);
-//     }
-//     res.send({
-//       Status: "Success",
-//       Massege: "File uploaded successfully",
-//       data: urls,
-//     });
-//   } else {
-//     res.send({ Status: "failed", Massege: "File not upload successfully" });
+//deletSpecificOneUser
+
+const deletSpecificOneUser = async (req, res) => {
+  console.log("req.id--------->", req.id);
+  let id = req.params.id;
+  console.log("delete.....>>>> id", id);
+  const deletuser = await User.findOne({
+    // include: [
+    //   {
+    //     model: eventType,
+    //     // attributes: ["Typeofevent"],
+    //   },
+    //   {
+    //     model: eventtypesCategories,
+    //     // attributes: ["categorytypeofevent"],
+    //   },
+    //   {
+    //     model: fileUpload,
+    //     // attributes: ["image"],
+    //   },
+    // ],
+    where: { id: id },
+  });
+  if ((id = deletuser?.id)) {
+    await deletuser.destroy({ where: { id: id } });
+    res.send({ Massege: "deleted", user: deletuser });
+  } else {
+    res.send({ Massege: "id not found" });
+  }
+};
+
+// uploadImageFile
+// const uploadImageFile = async (req, res) => {
+//   console.log("req.file----- >", req.file);
+//   try {
+//     const result = await cloudinary.uploader.upload(req.file.path);
+//     console.log("result------->", result);
+
+//     res.send({ Massege: "Success", result: result });
+//   } catch (error) {
+//     res.send({ Massege: "Error Image", error: error });
 //   }
-// });
+// };
 
 module.exports = {
   createUser,
   findOneUserEvent,
+  deletSpecificOneUser,
+  findAllUser,
+
+  // uploadImageFile,
 };
